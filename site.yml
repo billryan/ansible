@@ -1,0 +1,7 @@
+---
+- name: install shadowsocks-libev
+  hosts: ss_server
+  become: yes
+  become_method: sudo
+  roles:
+    - shadowsocks-libev
