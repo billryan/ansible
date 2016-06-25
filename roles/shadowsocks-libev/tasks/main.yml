@@ -1,23 +1,20 @@
 ---
-- name: Add GPG public key
-  apt_key: url=http://shadowsocks.org/debian/1D27208A.gpg state=present
+- include: Debian.yml
+  when: ansible_os_family == "Debian"
 
-- name: "case1: Ubuntu 14.04 or above"
-  apt_repository: repo='deb http://shadowsocks.org/ubuntu trusty main' state=present filename='shadowsocks-libev'
-  when: ansible_distribution == 'Ubuntu' and ansible_distribution_version | version_compare('14.04', '>=')
+- include: RedHat.yml
+  when: ansible_os_family == "RedHat"
 
-- name: "case2: Debian Wheezy, Ubuntu 12.04"
-  apt_repository: repo='deb http://shadowsocks.org/debian wheezy main' state=present filename='shadowsocks-libev'
-  when: (ansible_distribution == "Debian" and ansible_distribution_major_version == "7") or
-        (ansible_distribution == "Ubuntu" and ansible_distribution_release == "precise")
-
-# Debian 7.x users **To-Be-Done**
-
-- name: Install shadowsocks-libev
-  apt: name=shadowsocks-libev state=latest  update_cache=yes
-
-- name: generate config file
+- name: generate config file and restart shadowsocks-libev service
   template: src=config.json.j2 dest=/etc/shadowsocks-libev/config.json mode=0640
 
-- name: restart service shadowsocks-libev
-  service: name=shadowsocks-libev state=restarted
+- name: enable tcp_fastopen for ipv4 if available
+  sysctl: name="net.ipv4.tcp_fastopen" value="3" state=present reload=yes
+  when: ss_fast_open == "true" and ansible_kernel | version_compare('3.7', '>=')
+
+- name: set tcp_congestion_control for ipv4
+  sysctl: name="net.ipv4.tcp_congestion_control" value={{ tcp_congestion_control }} state=present reload=yes
+  when: tcp_congestion_control is defined
+
+- name: enable and start shadowsocks-libev service
+  service: name=shadowsocks-libev state=restarted enabled=yes
