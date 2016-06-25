@@ -1,0 +1,12 @@
+[vps_bandwagon]
+server1 ansible_host=your_server_ip ansible_user=root_or_user_with_sudo ansible_port=22 ss_server_port=80
+
+[vps_do]
+server2 ansible_host=your_server_ip ansible_user=root_or_user_with_sudo ansible_port=22 ss_server_port=443
+
+[vps_do:vars]
+tcp_congestion_control=hybla
+
+[ss_server:children]
+vps_bandwagon
+vps_do
